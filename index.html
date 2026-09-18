@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Đang xác minh</title>
+
+<style>
+*{
+    box-sizing:border-box;
+    font-family:Arial,sans-serif;
+}
+
+body{
+    margin:0;
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:#0b0f19;
+    color:white;
+}
+
+.box{
+    width:90%;
+    max-width:420px;
+    padding:30px 20px;
+    text-align:center;
+    background:#151b2b;
+    border-radius:18px;
+    box-shadow:0 0 30px #0008;
+}
+
+.loader{
+    width:55px;
+    height:55px;
+    margin:0 auto 20px;
+    border:5px solid #30394f;
+    border-top-color:#4facfe;
+    border-radius:50%;
+    animation:spin 1s linear infinite;
+}
+
+@keyframes spin{
+    to{transform:rotate(360deg)}
+}
+
+h2{
+    margin:10px 0;
+}
+
+#status{
+    color:#aab3c5;
+    line-height:1.5;
+}
+
+.success{
+    color:#35e58a !important;
+}
+
+.error{
+    color:#ff5d6c !important;
+}
+
+button{
+    display:none;
+    margin-top:20px;
+    width:100%;
+    padding:13px;
+    border:0;
+    border-radius:10px;
+    background:#4facfe;
+    color:white;
+    font-size:16px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="box">
+
+    <div class="loader" id="loader"></div>
+
+    <h2 id="title">Đang kiểm tra của bạn...</h2>
+
+    <p id="status">
+        Vui lòng chờ trong giây lát
+    </p>
+
+    <button id="retry" onclick="checkToken()">
+        Thử lại
+    </button>
+
+</div>
+
+<script>
+
+const API =
+"https://api.phienchoso.com/tukhoa.php?token=181c0e22ebae9b482be8cff66a60ffaa984022630c8f02c4e19c0d36d3f281b0&url=https://google.com";
+
+async function checkToken(){
+
+    const loader = document.getElementById("loader");
+    const title = document.getElementById("title");
+    const status = document.getElementById("status");
+    const retry = document.getElementById("retry");
+
+    loader.style.display = "block";
+    retry.style.display = "none";
+
+    title.textContent = "Đang kiểm tra của bạn...";
+    status.textContent = "Đang xác minh thông tin...";
+    status.className = "";
+
+    try{
+
+        const response = await fetch(API, {
+            method: "GET",
+            cache: "no-store"
+        });
+
+        if(!response.ok){
+            throw new Error("API_ERROR");
+        }
+
+        const text = await response.text();
+
+        console.log("API trả về:", text);
+
+        /*
+         * Nếu API trả JSON, có thể dùng:
+         *
+         * const data = JSON.parse(text);
+         *
+         * Ví dụ:
+         * const isValid = data.success === true;
+         *
+         * Hãy thay điều kiện bên dưới bằng
+         * trường thực tế API của bạn trả về.
+         */
+
+        let data;
+
+        try{
+            data = JSON.parse(text);
+        }catch{
+            data = text;
+        }
+
+        /*
+         * ĐÂY LÀ ĐIỀU KIỆN MẪU
+         * Bạn cần sửa theo response thật của API.
+         */
+        const isValid =
+            data?.success === true ||
+            data?.status === "success" ||
+            data?.valid === true;
+
+        loader.style.display = "none";
+
+        if(isValid){
+
+            title.textContent = "Xác minh thành công";
+            status.textContent =
+                "✓ Đã xác minh. Phần thưởng đã được cộng vào tài khoản.";
+            status.className = "success";
+
+            // Gọi hàm cộng xu ở đây
+            addCoins();
+
+        }else{
+
+            title.textContent = "Phát hiện truy cập bất thường";
+            status.textContent =
+                "Không thể xác minh yêu cầu. Vui lòng thử lại.";
+            status.className = "error";
+
+            retry.style.display = "block";
+        }
+
+    }catch(error){
+
+        console.error(error);
+
+        loader.style.display = "none";
+
+        title.textContent = "Không thể xác minh";
+        status.textContent =
+            "Máy chủ xác minh không phản hồi. Vui lòng thử lại.";
+        status.className = "error";
+
+        retry.style.display = "block";
+    }
+}
+
+
+/*
+ * DEMO CỘNG XU
+ * Không nên dùng localStorage để cộng tiền thật.
+ * Tiền/xu thật phải được xác nhận ở server.
+ */
+function addCoins(){
+
+    let coins =
+        Number(localStorage.getItem("coins") || 0);
+
+    coins += 100;
+
+    localStorage.setItem("coins", coins);
+
+    console.log("Đã cộng 100 xu. Số dư:", coins);
+}
+
+checkToken();
+
+</script>
+
+</body>
+</html>
